@@ -2,13 +2,30 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"strconv"
 )
 
 func home(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Wekcome to todo app"))
+	w.Header().Add("Server", "Go")
+
+	files := []string{
+		"./ui/html/base.tmpl.html",
+		"./ui/html/partials/nav.tmpl.html",
+		"./ui/html/pages/home.tmpl.html",
+	}
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
+
+	err = ts.ExecuteTemplate(w, "base", nil)
+	if err != nil {
+		internalServerError(w, err)
+	}
 }
 
 // todos list
@@ -62,26 +79,26 @@ func postTodoCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func notFound(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotFound)
-	w.Write([]byte("404 that don't exist boy"))
+	files := []string{
+		"./ui/html/base.tmpl.html",
+		"./ui/html/partials/nav.tmpl.html",
+		"./ui/html/pages/notFound.tmpl.html",
+	}
+
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
+
+	err = ts.ExecuteTemplate(w, "base", nil)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
 }
 
-func main() {
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /{$}", home)
-	mux.HandleFunc("GET /todo", getTodos)
-	mux.HandleFunc("GET /todo/{id}", getTodo)
-	mux.HandleFunc("PATCH /todo/{id}", patchTodo)
-	mux.HandleFunc("DELETE /todo/{id}", deleteTodo)
-	mux.HandleFunc("GET /todo/create", getTodoCreate)
-	mux.HandleFunc("POST /todo/create", postTodoCreate)
-	mux.HandleFunc("/", notFound)
-
-	url := "127.0.0.1:5000"
-	fmt.Printf("Serving at %v", url)
-
-	err := http.ListenAndServe(url, mux)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+func internalServerError(w http.ResponseWriter, err error) {
+	log.Print(err.Error())
+	http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 }
