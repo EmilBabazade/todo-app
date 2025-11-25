@@ -10,12 +10,7 @@ import (
 
 func home(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Server", "Go")
-	servePage(w, r, "./ui/html/pages/home.tmpl.html")
-}
-
-// todos list
-func getTodos(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("List of todos..."))
+	servePage(w, "./ui/html/pages/home.tmpl.html", nil)
 }
 
 // view a todo
@@ -64,10 +59,10 @@ func postTodoCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func notFound(w http.ResponseWriter, r *http.Request) {
-	servePage(w, r, "./ui/html/pages/notFound.tmpl.html")
+	servePage(w, "./ui/html/pages/notFound.tmpl.html", nil)
 }
 
-func servePage(w http.ResponseWriter, r *http.Request, file string) {
+func servePage(w http.ResponseWriter, file string, data any) {
 	files := []string{
 		"./ui/html/base.tmpl.html",
 		"./ui/html/partials/nav.tmpl.html",
@@ -80,7 +75,7 @@ func servePage(w http.ResponseWriter, r *http.Request, file string) {
 		return
 	}
 
-	err = ts.ExecuteTemplate(w, "base", nil)
+	err = ts.ExecuteTemplate(w, "base", data)
 	if err != nil {
 		internalServerError(w, err)
 		return

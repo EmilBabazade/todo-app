@@ -13,7 +13,6 @@ func main() {
 	mux.Handle("GET /static/", http.StripPrefix("/static", fileServer))
 
 	mux.HandleFunc("GET /{$}", home)
-	mux.HandleFunc("GET /todo", getTodos)
 	mux.HandleFunc("GET /todo/{id}", getTodo)
 	mux.HandleFunc("PATCH /todo/{id}", patchTodo)
 	mux.HandleFunc("DELETE /todo/{id}", deleteTodo)
