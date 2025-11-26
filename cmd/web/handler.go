@@ -3,21 +3,20 @@ package main
 import (
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
 	"strconv"
 )
 
-func home(w http.ResponseWriter, r *http.Request) {
+func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Server", "Go")
-	servePage(w, "./ui/html/pages/home.tmpl.html", nil)
+	app.page(w, "./ui/html/pages/home.tmpl.html", nil)
 }
 
 // view a todo
-func getTodo(w http.ResponseWriter, r *http.Request) {
+func (app *application) getTodo(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 0)
 	if err != nil || id < 1 {
-		log.Print(err)
+		app.logger.Error("invalid pathvalue", "error", err)
 		http.NotFound(w, r)
 		return
 	}
@@ -25,10 +24,10 @@ func getTodo(w http.ResponseWriter, r *http.Request) {
 }
 
 // edit a todo patch
-func patchTodo(w http.ResponseWriter, r *http.Request) {
+func (app *application) patchTodo(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 0)
 	if err != nil || id < 1 {
-		log.Print(err)
+		app.logger.Error("invalid pathvalue", "error", err)
 		http.NotFound(w, r)
 		return
 	}
@@ -36,33 +35,32 @@ func patchTodo(w http.ResponseWriter, r *http.Request) {
 }
 
 // delete a todo
-func deleteTodo(w http.ResponseWriter, r *http.Request) {
+func (app *application) deleteTodo(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 0)
 	if err != nil || id < 1 {
-		log.Print(err)
+		app.logger.Error("invalid pathvalue", "error", err)
 		http.NotFound(w, r)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
-	fmt.Fprintf(w, "Deleting todo with id %d", id)
 }
 
 // create a todo page
-func getTodoCreate(w http.ResponseWriter, r *http.Request) {
+func (app *application) getTodoCreate(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Create a todo"))
 }
 
 // create a todo
-func postTodoCreate(w http.ResponseWriter, r *http.Request) {
+func (app *application) postTodoCreate(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte("Creating a todo"))
 }
 
-func notFound(w http.ResponseWriter, r *http.Request) {
-	servePage(w, "./ui/html/pages/notFound.tmpl.html", nil)
+func (app *application) notFound(w http.ResponseWriter, r *http.Request) {
+	app.page(w, "./ui/html/pages/notFound.tmpl.html", nil)
 }
 
-func servePage(w http.ResponseWriter, file string, data any) {
+func (app *application) page(w http.ResponseWriter, file string, data any) {
 	files := []string{
 		"./ui/html/base.tmpl.html",
 		"./ui/html/partials/nav.tmpl.html",
@@ -71,18 +69,15 @@ func servePage(w http.ResponseWriter, file string, data any) {
 
 	ts, err := template.ParseFiles(files...)
 	if err != nil {
-		internalServerError(w, err)
+		app.logger.Error("Invalid files", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
 	err = ts.ExecuteTemplate(w, "base", data)
 	if err != nil {
-		internalServerError(w, err)
+		app.logger.Error("Invalid templates", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-}
-
-func internalServerError(w http.ResponseWriter, err error) {
-	log.Print(err.Error())
-	http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 }

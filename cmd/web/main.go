@@ -7,8 +7,13 @@ import (
 	"os"
 )
 
+type application struct {
+	logger *slog.Logger
+}
+
 func main() {
-	addr := flag.String("addr", "127.0.0.1", "HTTP network address")
+	addr := flag.String("addr", "127.0.0.1:5000", "HTTP network address")
+	flag.Parse()
 
 	logHandler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		AddSource: true,
@@ -16,22 +21,26 @@ func main() {
 	})
 	logger := slog.New(logHandler)
 
+	app := &application{
+		logger: logger,
+	}
+
 	mux := http.NewServeMux()
 	fileServer := http.FileServer(http.Dir("./ui/static"))
 	mux.Handle("GET /static/", http.StripPrefix("/static", fileServer))
-	mux.HandleFunc("GET /{$}", home)
-	mux.HandleFunc("GET /todo/{id}", getTodo)
-	mux.HandleFunc("PATCH /todo/{id}", patchTodo)
-	mux.HandleFunc("DELETE /todo/{id}", deleteTodo)
-	mux.HandleFunc("GET /todo/create", getTodoCreate)
-	mux.HandleFunc("POST /todo/create", postTodoCreate)
-	mux.HandleFunc("/", notFound)
+	mux.HandleFunc("GET /{$}", app.home)
+	mux.HandleFunc("GET /todo/{id}", app.getTodo)
+	mux.HandleFunc("PATCH /todo/{id}", app.patchTodo)
+	mux.HandleFunc("DELETE /todo/{id}", app.deleteTodo)
+	mux.HandleFunc("GET /todo/create", app.getTodoCreate)
+	mux.HandleFunc("POST /todo/create", app.postTodoCreate)
+	mux.HandleFunc("/", app.notFound)
 
-	logger.Info("Serving at", "addr", *addr)
+	app.logger.Info("Serving at", "addr", *addr)
 
 	err := http.ListenAndServe(*addr, mux)
 	if err != nil {
-		logger.Error(err.Error())
+		app.logger.Error(err.Error())
 		os.Exit(1)
 	}
 }
