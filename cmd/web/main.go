@@ -8,10 +8,12 @@ import (
 	"os"
 
 	_ "github.com/go-sql-driver/mysql"
+	"todo-app.emilbabazade.net/internal/models"
 )
 
 type application struct {
 	logger *slog.Logger
+	todos  *models.TodoModel
 }
 
 func main() {
@@ -34,6 +36,7 @@ func main() {
 
 	app := &application{
 		logger: logger,
+		todos:  &models.TodoModel{DB: db},
 	}
 
 	logger.Info("Serving at", "addr", *addr)
