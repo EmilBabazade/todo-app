@@ -1,17 +1,24 @@
 package main
 
 import (
-	"fmt"
-	"log"
+	"flag"
+	"log/slog"
 	"net/http"
+	"os"
 )
 
 func main() {
-	mux := http.NewServeMux()
+	addr := flag.String("addr", "127.0.0.1", "HTTP network address")
 
+	logHandler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		AddSource: true,
+		Level:     slog.LevelDebug,
+	})
+	logger := slog.New(logHandler)
+
+	mux := http.NewServeMux()
 	fileServer := http.FileServer(http.Dir("./ui/static"))
 	mux.Handle("GET /static/", http.StripPrefix("/static", fileServer))
-
 	mux.HandleFunc("GET /{$}", home)
 	mux.HandleFunc("GET /todo/{id}", getTodo)
 	mux.HandleFunc("PATCH /todo/{id}", patchTodo)
@@ -20,11 +27,11 @@ func main() {
 	mux.HandleFunc("POST /todo/create", postTodoCreate)
 	mux.HandleFunc("/", notFound)
 
-	url := "127.0.0.1:5000"
-	fmt.Printf("Serving at %v", url)
+	logger.Info("Serving at", "addr", *addr)
 
-	err := http.ListenAndServe(url, mux)
+	err := http.ListenAndServe(*addr, mux)
 	if err != nil {
-		log.Fatal(err.Error())
+		logger.Error(err.Error())
+		os.Exit(1)
 	}
 }
